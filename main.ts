@@ -1,5 +1,7 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
-
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile, TFolder } from 'obsidian';
+import * as fs from 'fs';
+import * as path from 'path';
+var app:App;
 interface MyPluginSettings {
 	mySetting: string;
 }
@@ -13,9 +15,9 @@ export default class MyPlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
-
+		app = this.app;
 		// This creates an icon in the left ribbon.
-		let ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
+		let ribbonIconEl = this.addRibbonIcon('dice', 'Auto Tag', (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
 			new Notice('This is a notice!');
 		});
@@ -71,6 +73,23 @@ export default class MyPlugin extends Plugin {
 		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
 			console.log('click', evt);
 		});
+
+		this.registerEvent(this.app.vault.on('create',AbstractFile =>{
+			if (AbstractFile instanceof TFile) {
+				var parentName:string = AbstractFile.parent.name;
+				console.log(parentName)
+				if (parentName.contains("_Tag")) {
+					var Tag ="#" + parentName.replace("_Tag","")
+					console.log(Tag)
+					var t = this.app.vault.read(AbstractFile)
+					t.then(function (myStr){
+						if (!myStr.contains(Tag)) {
+							app.vault.modify(AbstractFile,Tag+"\n\n"+myStr)
+						}
+					})
+				}
+			}
+		}))
 
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
